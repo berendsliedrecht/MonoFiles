@@ -15,5 +15,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "CalmFiles"
+rootProject.name = "MonoFiles"
 include(":app")

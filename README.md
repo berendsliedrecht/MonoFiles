@@ -1,4 +1,4 @@
-# CalmFiles
+# MonoFiles
 
 A simple file browser for the Mudita Kompakt (e-ink), built with the Mudita Mindful Design (MMD) framework. Browse the device storage, create folders and files, rename, copy, move and delete entries, and open files in the app that handles them. Requires All Files Access, requested on first launch. Fully offline.
 

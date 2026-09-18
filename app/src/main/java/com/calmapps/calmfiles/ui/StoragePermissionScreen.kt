@@ -31,7 +31,7 @@ fun StoragePermissionScreen(onRequestClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         TextMMD(
-            text = "Welcome to CalmFiles",
+            text = "Welcome to MonoFiles",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
@@ -41,7 +41,7 @@ fun StoragePermissionScreen(onRequestClick: () -> Unit) {
         Spacer(modifier = Modifier.height(12.dp))
 
         TextMMD(
-            text = "CalmFiles needs access to all files to browse and manage the storage on this device.",
+            text = "MonoFiles needs access to all files to browse and manage the storage on this device.",
             fontSize = 16.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),

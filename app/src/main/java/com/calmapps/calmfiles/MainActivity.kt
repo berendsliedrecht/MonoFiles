@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ThemeMMD {
-                CalmFilesApp()
+                MonoFilesApp()
             }
         }
     }
@@ -55,7 +55,7 @@ private fun hasStorageAccess(context: Context): Boolean =
     }
 
 @Composable
-fun CalmFilesApp(viewModel: FilesViewModel = viewModel()) {
+fun MonoFilesApp(viewModel: FilesViewModel = viewModel()) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var hasAccess by remember { mutableStateOf(hasStorageAccess(context)) }
