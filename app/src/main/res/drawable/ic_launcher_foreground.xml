@@ -6,17 +6,19 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- folder body with tab -->
+    <!-- folder body with tab, rounded corners -->
     <path
         android:strokeColor="#000000"
         android:strokeWidth="2.5"
         android:strokeLineJoin="round"
+        android:strokeLineCap="round"
         android:fillColor="#00000000"
-        android:pathData="M32,40 H48 L52,46 H76 V70 H32 Z" />
+        android:pathData="M36,40 H48 L52,46 H72 A4,4 0 0 1 76,50 V66 A4,4 0 0 1 72,70 H36 A4,4 0 0 1 32,66 V44 A4,4 0 0 1 36,40 Z" />
 
     <!-- fold line under the tab -->
     <path
         android:strokeColor="#000000"
         android:strokeWidth="1.5"
-        android:pathData="M32,46 H52" />
+        android:strokeLineCap="round"
+        android:pathData="M33,46 H52" />
 </vector>
