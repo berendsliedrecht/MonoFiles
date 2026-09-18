@@ -23,6 +23,10 @@ Or sideload the release APK from `app/build/outputs/apk/release/` (debug-signed 
 - `ui/BrowserScreen.kt`: Directory listing with per-entry actions, bottom sheets for input and confirmation, and file opening via `ACTION_VIEW`.
 - `ui/StoragePermissionScreen.kt`: One-time permission onboarding.
 
+## Support
+
+If you find this app useful, consider [sponsoring me](https://github.com/sponsors/berendsliedrecht).
+
 ## License
 
 [MIT](LICENSE)
