@@ -25,6 +25,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.InsertDriveFile
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.SdCard
+import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.calmapps.calmfiles.FilesViewModel
+import com.calmapps.calmfiles.Volume
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
 import com.mudita.mmd.components.divider.HorizontalDividerMMD
 import com.mudita.mmd.components.lazy.LazyColumnMMD
@@ -74,9 +77,13 @@ fun BrowserScreen(viewModel: FilesViewModel) {
     var sheet by remember { mutableStateOf<Sheet?>(null) }
     var menuExpanded by remember { mutableStateOf(false) }
 
-    val atRoot = viewModel.currentDir == viewModel.root
+    val currentDir = viewModel.currentDir
+    val volume = viewModel.currentVolume
+    val atVolumeList = currentDir == null
+    val canGoUp = currentDir != null &&
+        (currentDir.path != volume?.root?.path || viewModel.volumes.size > 1)
 
-    BackHandler(enabled = !atRoot) { viewModel.navigateUp() }
+    BackHandler(enabled = canGoUp) { viewModel.navigateUp() }
 
     LaunchedEffect(viewModel.message) {
         viewModel.message?.let {
@@ -91,7 +98,11 @@ fun BrowserScreen(viewModel: FilesViewModel) {
             TopAppBarMMD(
                 title = {
                     TextMMD(
-                        text = if (atRoot) "Storage" else viewModel.currentDir.name,
+                        text = when {
+                            currentDir == null -> "Storage"
+                            volume != null && currentDir.path == volume.root.path -> volume.name
+                            else -> currentDir.name
+                        },
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -99,14 +110,14 @@ fun BrowserScreen(viewModel: FilesViewModel) {
                     )
                 },
                 navigationIcon = {
-                    if (!atRoot) {
+                    if (canGoUp) {
                         IconButton(onClick = { viewModel.navigateUp() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Up")
                         }
                     }
                 },
                 actions = {
-                    Box {
+                    if (!atVolumeList) Box {
                         IconButton(onClick = { menuExpanded = true }) {
                             Icon(Icons.Outlined.MoreVert, "Menu")
                         }
@@ -152,7 +163,15 @@ fun BrowserScreen(viewModel: FilesViewModel) {
             HorizontalDividerMMD()
 
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                if (viewModel.entries.isEmpty()) {
+                if (atVolumeList) {
+                    LazyColumnMMD(modifier = Modifier.fillMaxSize()) {
+                        items(viewModel.volumes.size) { index ->
+                            val vol = viewModel.volumes[index]
+                            VolumeRow(volume = vol, onClick = { viewModel.openVolume(vol) })
+                            if (index < viewModel.volumes.lastIndex) HorizontalDividerMMD(thickness = 0.5.dp)
+                        }
+                    }
+                } else if (viewModel.entries.isEmpty()) {
                     TextMMD(
                         text = "Empty folder",
                         fontSize = 16.sp,
@@ -176,7 +195,7 @@ fun BrowserScreen(viewModel: FilesViewModel) {
                 }
             }
 
-            viewModel.clipboard?.let { clip ->
+            if (!atVolumeList) viewModel.clipboard?.let { clip ->
                 HorizontalDividerMMD(thickness = 3.dp)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -269,6 +288,38 @@ fun BrowserScreen(viewModel: FilesViewModel) {
         )
 
         null -> Unit
+    }
+}
+
+@Composable
+private fun VolumeRow(volume: Volume, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    ) {
+        Icon(
+            imageVector = if (volume.isPrimary) Icons.Outlined.Smartphone else Icons.Outlined.SdCard,
+            contentDescription = null,
+            modifier = Modifier.size(28.dp),
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            TextMMD(
+                text = volume.name,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            TextMMD(
+                text = "${formatSize(volume.root.freeSpace)} free of ${formatSize(volume.root.totalSpace)}",
+                fontSize = 12.sp,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -421,8 +472,9 @@ private fun SheetButton(label: String, onClick: () -> Unit) {
 }
 
 private fun displayPath(viewModel: FilesViewModel): String {
-    val relative = viewModel.currentDir.path.removePrefix(viewModel.root.path)
-    return "Storage$relative"
+    val dir = viewModel.currentDir ?: return "Storage"
+    val volume = viewModel.currentVolume ?: return dir.path
+    return volume.name + dir.path.removePrefix(volume.root.path)
 }
 
 private fun entrySubtitle(entry: File): String {

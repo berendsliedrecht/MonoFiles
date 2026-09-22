@@ -65,7 +65,8 @@ fun MonoFilesApp(viewModel: FilesViewModel = viewModel()) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 val granted = hasStorageAccess(context)
-                if (granted && !hasAccess) viewModel.refresh()
+                // Also picks up SD cards mounted or removed while the app was backgrounded.
+                if (granted) viewModel.refresh()
                 hasAccess = granted
             }
         }
