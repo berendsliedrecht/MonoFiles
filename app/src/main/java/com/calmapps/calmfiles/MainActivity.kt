@@ -26,22 +26,39 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.calmapps.calmfiles.ui.BrowserScreen
 import com.calmapps.calmfiles.ui.StoragePermissionScreen
 import com.mudita.mmd.ThemeMMD
+import java.io.File
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val picking = intent.action == Intent.ACTION_GET_CONTENT
+        val pickFilters = if (picking) {
+            intent.getStringArrayExtra(Intent.EXTRA_MIME_TYPES)?.toList()
+                ?: listOf(intent.type ?: "*/*")
+        } else null
         setContent {
             ThemeMMD {
-                MonoFilesApp()
+                MonoFilesApp(
+                    pickFilters = pickFilters,
+                    onPick = if (picking) ::finishWithPickedFile else null,
+                )
             }
         }
+    }
+
+    /** Hands the picked file back to the requesting app as a readable content URI. */
+    private fun finishWithPickedFile(file: File) {
+        val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+        setResult(RESULT_OK, Intent().setData(uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+        finish()
     }
 }
 
@@ -55,7 +72,11 @@ private fun hasStorageAccess(context: Context): Boolean =
     }
 
 @Composable
-fun MonoFilesApp(viewModel: FilesViewModel = viewModel()) {
+fun MonoFilesApp(
+    pickFilters: List<String>? = null,
+    onPick: ((File) -> Unit)? = null,
+    viewModel: FilesViewModel = viewModel(),
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var hasAccess by remember { mutableStateOf(hasStorageAccess(context)) }
@@ -83,7 +104,7 @@ fun MonoFilesApp(viewModel: FilesViewModel = viewModel()) {
 
     Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
         if (hasAccess) {
-            BrowserScreen(viewModel)
+            BrowserScreen(viewModel, pickFilters = pickFilters, onPick = onPick)
         } else {
             StoragePermissionScreen(
                 onRequestClick = {

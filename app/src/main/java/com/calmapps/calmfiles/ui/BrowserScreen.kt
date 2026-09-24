@@ -71,7 +71,11 @@ private sealed class Sheet {
 }
 
 @Composable
-fun BrowserScreen(viewModel: FilesViewModel) {
+fun BrowserScreen(
+    viewModel: FilesViewModel,
+    pickFilters: List<String>? = null,
+    onPick: ((File) -> Unit)? = null,
+) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostStateMMD() }
     var sheet by remember { mutableStateOf<Sheet?>(null) }
@@ -171,25 +175,30 @@ fun BrowserScreen(viewModel: FilesViewModel) {
                             if (index < viewModel.volumes.lastIndex) HorizontalDividerMMD(thickness = 0.5.dp)
                         }
                     }
-                } else if (viewModel.entries.isEmpty()) {
-                    TextMMD(
-                        text = "Empty folder",
-                        fontSize = 16.sp,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
                 } else {
-                    LazyColumnMMD(modifier = Modifier.fillMaxSize()) {
-                        items(viewModel.entries.size) { index ->
-                            val entry = viewModel.entries[index]
-                            EntryRow(
-                                entry = entry,
-                                onClick = {
-                                    if (entry.isDirectory) viewModel.navigateTo(entry)
-                                    else openFile(context, entry, chooser = false) { viewModel.message = it }
-                                },
-                                onMoreClick = { sheet = Sheet.Actions(entry) },
-                            )
-                            if (index < viewModel.entries.lastIndex) HorizontalDividerMMD(thickness = 0.5.dp)
+                    val entries = if (pickFilters == null) viewModel.entries
+                        else viewModel.entries.filter { it.isDirectory || matchesMime(it, pickFilters) }
+                    if (entries.isEmpty()) {
+                        TextMMD(
+                            text = "Empty folder",
+                            fontSize = 16.sp,
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    } else {
+                        LazyColumnMMD(modifier = Modifier.fillMaxSize()) {
+                            items(entries.size) { index ->
+                                val entry = entries[index]
+                                EntryRow(
+                                    entry = entry,
+                                    onClick = {
+                                        if (entry.isDirectory) viewModel.navigateTo(entry)
+                                        else if (onPick != null) onPick(entry)
+                                        else openFile(context, entry, chooser = false) { viewModel.message = it }
+                                    },
+                                    onMoreClick = { sheet = Sheet.Actions(entry) },
+                                )
+                                if (index < entries.lastIndex) HorizontalDividerMMD(thickness = 0.5.dp)
+                            }
                         }
                     }
                 }
@@ -492,6 +501,16 @@ private fun formatSize(bytes: Long): String = when {
     bytes >= 1_000_000 -> "%.1f MB".format(bytes / 1_000_000.0)
     bytes >= 1_000 -> "%.1f KB".format(bytes / 1_000.0)
     else -> "$bytes B"
+}
+
+// True when the file's MIME type (from its extension) matches any picker filter, wildcards included.
+private fun matchesMime(file: File, filters: List<String>): Boolean {
+    val mime = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(file.extension.lowercase()) ?: "application/octet-stream"
+    return filters.any { filter ->
+        filter == "*/*" || filter == mime ||
+            (filter.endsWith("/*") && mime.startsWith(filter.dropLast(1)))
+    }
 }
 
 /** Opens a file in the app that handles its type, via a FileProvider content URI. */
